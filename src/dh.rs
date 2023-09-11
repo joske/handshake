@@ -65,7 +65,7 @@ impl DH for DH25519 {
     }
 
     fn generate(&mut self) {
-        OsRng::default().fill_bytes(&mut self.private);
+        OsRng.fill_bytes(&mut self.private);
         self.public = x25519(self.private, x25519_dalek::X25519_BASEPOINT_BYTES);
     }
 
@@ -105,7 +105,7 @@ impl DH for DH448 {
     }
 
     fn generate(&mut self) {
-        OsRng::default().fill_bytes(&mut self.private);
+        OsRng.fill_bytes(&mut self.private);
         self.public = x448::x448_unchecked(self.private, x448::X448_BASEPOINT_BYTES);
     }
 

@@ -1,29 +1,20 @@
-use handshake::HandshakeState;
 use std::error::Error;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpStream,
 };
 
-use crate::dh::from_handshake_name;
+use handshake::dh::from_handshake_name;
+use handshake::handshake::HandshakeState;
 
-static PSK: &[u8] = b"XTSPPFrCk7sZmBFm8Hm6cXjjS7Ddd3PV";
+static PSK: [u8; 32] = *b"XTSPPFrCk7sZmBFm8Hm6cXjjS7Ddd3PV";
 const NAME: &str = "Noise_XXpsk3_25519_ChaChaPoly_BLAKE2s";
-
-pub mod aes;
-pub mod chacha;
-pub mod cipher;
-pub mod dh;
-pub mod handshake;
-pub mod hasher;
-pub mod pattern;
-pub mod symmetric;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut static_key = from_handshake_name(NAME)?;
     static_key.generate();
-    let mut handshake_state = HandshakeState::new(NAME, static_key, PSK, &[])?;
+    let mut handshake_state = HandshakeState::new(NAME, static_key, Some(PSK), &[], true)?;
     let payload = [];
     let mut message = vec![0u8; 1024];
     println!("connect to server");
@@ -36,11 +27,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let len = handshake_state.write_message(&payload, &mut message)?;
     write(&mut socket, &message[..len]).await?;
     println!("handshake done");
-    let len = handshake_state.write_message(b"You should hire me!", &mut message)?;
+
+    let mut codec = handshake_state.into_transport_mode()?;
+
+    let len = codec.encrypt(b"You should hire me!", &mut message)?;
     write(&mut socket, &message[..len]).await?;
     println!("Sent encypted message to server");
     let response = read(&mut socket).await?;
-    let len = handshake_state.read_message(&response, &mut message)?;
+    let len = codec.decrypt(&response, &mut message)?;
     println!(
         "server responded with: {}",
         String::from_utf8_lossy(&message[..len])

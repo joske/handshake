@@ -33,7 +33,7 @@ impl SymmetricState {
         let mut hash = [0u8; MAX_HASH_LEN];
         if bytes.len() <= hash_len {
             let len = bytes.len();
-            hash[..len].copy_from_slice(&bytes);
+            hash[..len].copy_from_slice(bytes);
 
         } else {
             self.hasher.update(bytes);

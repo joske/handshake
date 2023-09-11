@@ -3,6 +3,7 @@ use crate::{
     dh::{from_handshake_name, DH, MAX_DH_LEN},
     pattern::{parse_handshake_patterns, Pattern},
     symmetric::SymmetricState,
+    transportstate::TransportState,
 };
 use std::error::Error;
 
@@ -10,6 +11,7 @@ const TAG_LEN: usize = 16;
 
 /// Keeps the `HandshakeState`. Only initiator side is implemented.
 pub struct HandshakeState {
+    initiator: bool,
     symmetric_state: SymmetricState,
     s: Box<dyn DH>,
     e: Box<dyn DH>,
@@ -17,9 +19,8 @@ pub struct HandshakeState {
     re: [u8; MAX_DH_LEN],
     psk: Option<[u8; 32]>,
     patterns: Vec<Vec<Pattern>>,
-    child1: CipherState,
-    child2: CipherState,
-    transport_mode: bool,
+    cipher1: CipherState,
+    cipher2: CipherState,
 }
 
 impl HandshakeState {
@@ -30,8 +31,9 @@ impl HandshakeState {
     pub fn new(
         handshake_name: &str,
         s: Box<dyn DH>,
-        psk: &[u8],
+        psk: Option<[u8; 32]>,
         prologue: &[u8],
+        initiator: bool,
     ) -> Result<Self, Box<dyn Error>> {
         let mut patterns = parse_handshake_patterns(handshake_name);
         // patterns is reversed to be able to easily pop() the front one
@@ -39,21 +41,19 @@ impl HandshakeState {
         let mut symmetric_state = SymmetricState::new(handshake_name)?;
         symmetric_state.init(handshake_name);
         symmetric_state.mix_hash(prologue);
-        let mut k = [0u8; 32];
-        k.copy_from_slice(psk);
         // no pre-messages for this handshake pattern
         let e = from_handshake_name(handshake_name)?;
         Ok(Self {
+            initiator,
             symmetric_state,
             s,
             e,
             rs: [0u8; MAX_DH_LEN],
             re: [0u8; MAX_DH_LEN],
-            psk: Some(k),
+            psk,
             patterns,
-            child1: CipherState::new(handshake_name)?,
-            child2: CipherState::new(handshake_name)?,
-            transport_mode: false,
+            cipher1: CipherState::new(handshake_name)?,
+            cipher2: CipherState::new(handshake_name)?,
         })
     }
 
@@ -67,10 +67,21 @@ impl HandshakeState {
         payload: &[u8],
         message: &mut [u8],
     ) -> Result<usize, Box<dyn Error>> {
-        if self.transport_mode {
-            self.child1.encrypt(&[0u8; 0], payload, message)
+        self.write_message_handshake(payload, message)
+    }
+
+    /// Switch to transport mode. Will split the `SymmetricState` into two `CipherState` objects
+    pub fn into_transport_mode(mut self) -> Result<TransportState, Box<dyn Error>> {
+        if self.patterns.is_empty() {
+            self.symmetric_state
+                .split(&mut self.cipher1, &mut self.cipher2);
+            Ok(TransportState::new(
+                self.initiator,
+                self.cipher1,
+                self.cipher2,
+            ))
         } else {
-            self.write_message_handshake(payload, message)
+            Err("Handshake not finished yet".into())
         }
     }
 
@@ -145,13 +156,6 @@ impl HandshakeState {
             .symmetric_state
             .encrypt_and_mix_hash(payload, &mut message[byte_index..])?;
 
-        if self.patterns.is_empty() {
-            // last pattern, now split the cipher states and enable transport mode
-            self.symmetric_state
-                .split(&mut self.child1, &mut self.child2);
-            self.transport_mode = true;
-        }
-
         Ok(byte_index)
     }
 
@@ -165,11 +169,7 @@ impl HandshakeState {
         message: &[u8],
         payload: &mut [u8],
     ) -> Result<usize, Box<dyn Error>> {
-        if self.transport_mode {
-            self.child2.decrypt(&[0u8; 0], message, payload)
-        } else {
-            self.read_message_handshake(message, payload)
-        }
+        self.read_message_handshake(message, payload)
     }
 
     /// Receive a message during the handshake phase.
