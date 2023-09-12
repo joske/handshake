@@ -30,9 +30,9 @@ pub enum Patterns {
 }
 
 /// parse the handshake name into a list of patterns
-/// assumes only fundamental patterns exist (2 letters)
-/// only XX is implemented
+/// does not support K patterns and other modifiers than pskx
 #[must_use]
+#[rustfmt::skip]
 pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
     let mut patterns = Vec::new();
     let mut bits = name.split('_');
@@ -41,6 +41,37 @@ pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
         let from_str = Patterns::from_str(s);
         if let Ok(p) = from_str {
             patterns = match p {
+                Patterns::NN => {
+                    vec![
+                        vec![Pattern::E],
+                        vec![Pattern::E, Pattern::EE]
+                    ]
+                }
+                Patterns::NX => {
+                    vec![
+                        vec![Pattern::E],
+                        vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],
+                    ]
+                }
+                Patterns::XN => {
+                    vec![
+                        vec![Pattern::E],
+                        vec![Pattern::E, Pattern::EE],
+                        vec![Pattern::S, Pattern::SE],
+                    ]
+                }
+                Patterns::IN => {
+                    vec![
+                        vec![Pattern::E, Pattern::S],
+                        vec![Pattern::E, Pattern::EE, Pattern::SE],
+                    ]
+                }
+                Patterns::IX => {
+                    vec![
+                        vec![Pattern::E, Pattern::S],
+                        vec![Pattern::E, Pattern::EE, Pattern::SE, Pattern::S, Pattern::ES],
+                    ]
+                }
                 Patterns::XX => {
                     vec![
                         vec![Pattern::E],
@@ -51,12 +82,14 @@ pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
                 _ => Vec::new(),
             };
         }
-        let psk_bit = &p[2..];
-        if psk_bit.starts_with("psk") {
-            if let Ok(n) = psk_bit[3..].parse::<usize>() {
+        let modifiers = &p[2..];
+        if modifiers.starts_with("psk") {
+            if let Ok(n) = modifiers[3..].parse::<usize>() {
                 if n == 0 {
+                    // psk0 means at the start of the first message
                     patterns[0].insert(0, Pattern::PSK);
                 } else {
+                    // all other cases, add at the end
                     patterns[n - 1].push(Pattern::PSK);
                 }
             }
@@ -113,13 +146,7 @@ mod tests {
     fn test_pattern_psk2() {
         let expected = vec![
             vec![Pattern::E],
-            vec![
-                Pattern::E,
-                Pattern::EE,
-                Pattern::S,
-                Pattern::ES,
-                Pattern::PSK,
-            ],
+            vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES, Pattern::PSK],
             vec![Pattern::S, Pattern::SE],
         ];
 
