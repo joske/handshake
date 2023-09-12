@@ -1,5 +1,8 @@
-use chacha20poly1305::aead::{Aead, NewAead, Payload};
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+use aead::KeyInit;
+use chacha20poly1305::{
+    aead::{Aead, Payload},
+    ChaCha20Poly1305, Key, Nonce,
+};
 use std::error::Error;
 
 use crate::cipher::Cipher;
@@ -34,10 +37,7 @@ impl Cipher for CipherChaCha {
         let mut nonce_bytes = [0u8; 12];
         nonce_bytes[4..].copy_from_slice(&nonce.to_le_bytes());
         let nonce = Nonce::from_slice(&nonce_bytes);
-        let p = Payload {
-            msg: plaintext,
-            aad: ad,
-        };
+        let p = Payload { msg: plaintext, aad: ad };
         let ciphertext = self
             .cipher
             .as_mut()

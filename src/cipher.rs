@@ -1,9 +1,7 @@
-use std::error::Error;
-use std::str::FromStr;
+use std::{error::Error, str::FromStr};
 use strum::EnumString;
 
-use crate::aes::CipherAesGcm;
-use crate::chacha::CipherChaCha;
+use crate::{aes::CipherAesGcm, chacha::CipherChaCha};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString)]
 pub enum Ciphers {
@@ -67,8 +65,8 @@ pub trait Cipher: Send + Sync {
 }
 
 pub struct CipherState {
-    n: u64,
-    cipher: Box<dyn Cipher>,
+    n:       u64,
+    cipher:  Box<dyn Cipher>,
     has_key: bool,
 }
 
@@ -80,11 +78,7 @@ impl CipherState {
     /// Will return `Err` if a an algorithm other than `ChaChaPoly` is requested
     pub fn new(name: &str) -> Result<Self, Box<dyn Error>> {
         let cipher = from_handshake_name(name)?;
-        Ok(Self {
-            n: 0,
-            cipher,
-            has_key: false,
-        })
+        Ok(Self { n: 0, cipher, has_key: false })
     }
 
     pub fn init(&mut self, key: &[u8], n: u64) {
@@ -114,10 +108,7 @@ impl CipherState {
         plaintext: &[u8],
         out: &mut [u8],
     ) -> Result<usize, Box<dyn Error>> {
-        let len = self
-            .cipher
-            .as_mut()
-            .encrypt_ad(self.n, ad, plaintext, out)?;
+        let len = self.cipher.as_mut().encrypt_ad(self.n, ad, plaintext, out)?;
         self.n += 1; // we'll not worry about overflow here, 64 bits should be enough for one handshake ;-)
         Ok(len)
     }
@@ -182,9 +173,7 @@ mod tests {
         let plaintext = [3u8; 64];
         let authtext = [2u8; 32];
         let mut out = [0u8; 128];
-        let len = cipher_state
-            .encrypt(&authtext, &plaintext, &mut out)
-            .unwrap();
+        let len = cipher_state.encrypt(&authtext, &plaintext, &mut out).unwrap();
         let hex = hex::encode(&out[..len]);
         assert_eq!("02244ed2ed5115c107f86a8eada75851ea886c0cde076ecf3985b8049d35f327177d48845e5aaaec40288d46b3499bc7b29ecbc4445c5ecd415ab7c92ed57181affbc69d77d72e11d832d21ce3df33c6", hex);
     }
@@ -199,9 +188,7 @@ mod tests {
         let plaintext = [3u8; 64];
         let authtext = [2u8; 32];
         let mut out = [0u8; 128];
-        let len = cipher_state
-            .decrypt(&authtext, &ciphertext, &mut out)
-            .unwrap();
+        let len = cipher_state.decrypt(&authtext, &ciphertext, &mut out).unwrap();
         assert_eq!(plaintext, out[..len]);
     }
 
@@ -214,9 +201,7 @@ mod tests {
         let plaintext = [3u8; 64];
         let authtext = [2u8; 32];
         let mut out = [0u8; 128];
-        let len = cipher_state
-            .encrypt(&authtext, &plaintext, &mut out)
-            .unwrap();
+        let len = cipher_state.encrypt(&authtext, &plaintext, &mut out).unwrap();
         let hex = hex::encode(&out[..len]);
         assert_eq!("bc369bdf763800bc907a91467227c242b6c59cb3869c37f9cf270dd60dd56d185dbbaef850edbc6b2495d479e3b5a0edada5ae9fc8d49757cc001fbc1ce9998c241d11e43ea285df6aec4938762759c4", hex);
     }
@@ -231,9 +216,7 @@ mod tests {
         let authtext = [2u8; 32];
         let mut out = [0u8; 128];
         let ciphertext = hex::decode("bc369bdf763800bc907a91467227c242b6c59cb3869c37f9cf270dd60dd56d185dbbaef850edbc6b2495d479e3b5a0edada5ae9fc8d49757cc001fbc1ce9998c241d11e43ea285df6aec4938762759c4").unwrap();
-        let len = cipher_state
-            .decrypt(&authtext, &ciphertext, &mut out)
-            .unwrap();
+        let len = cipher_state.decrypt(&authtext, &ciphertext, &mut out).unwrap();
         assert_eq!(plaintext, out[..len]);
     }
 }
