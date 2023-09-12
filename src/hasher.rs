@@ -188,8 +188,6 @@ impl Hasher for HasherSha512 {
 mod tests {
     use crate::hasher::from_handshake_name;
 
-    use super::{Hasher, HasherBlake2s};
-
     #[test]
     fn test_hasher_empty() {
         let hasher = from_handshake_name("");

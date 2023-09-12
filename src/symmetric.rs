@@ -34,7 +34,6 @@ impl SymmetricState {
         if bytes.len() <= hash_len {
             let len = bytes.len();
             hash[..len].copy_from_slice(bytes);
-
         } else {
             self.hasher.update(bytes);
             self.hasher.output(&mut hash);
@@ -161,9 +160,16 @@ impl SymmetricState {
         out: &mut [u8],
     ) -> Result<usize, Box<dyn Error>> {
         let hash_len = self.hasher.hash_len();
-        let len = self
-            .cipher_state
-            .encrypt(&self.h[..hash_len], plaintext, out)?;
+        let len = if self.cipher_state.has_key() {
+            let len = self
+                .cipher_state
+                .encrypt(&self.h[..hash_len], plaintext, out)?;
+            len
+        } else {
+            let len = plaintext.len();
+            out[..len].copy_from_slice(plaintext);
+            len
+        };
         self.mix_hash(&out[..len]);
         Ok(len)
     }
@@ -180,7 +186,13 @@ impl SymmetricState {
         out: &mut [u8],
     ) -> Result<usize, Box<dyn Error>> {
         let hash_len = self.hasher.hash_len();
-        let len = self.cipher_state.decrypt(&self.h[..hash_len], data, out)?;
+        let len = if self.cipher_state.has_key() {
+            self.cipher_state.decrypt(&self.h[..hash_len], data, out)?
+        } else {
+            let len = data.len();
+            out[..len].copy_from_slice(data);
+            len
+        };
         self.mix_hash(data);
         Ok(len)
     }

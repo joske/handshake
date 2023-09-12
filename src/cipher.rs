@@ -93,6 +93,10 @@ impl CipherState {
         self.cipher.as_mut().set_key(key);
     }
 
+    pub fn has_key(&self) -> bool {
+        self.has_key
+    }
+
     #[must_use]
     pub fn key_len(&self) -> usize {
         self.cipher.as_ref().cipher_key_len()
