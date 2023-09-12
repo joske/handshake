@@ -45,11 +45,21 @@ pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
                     vec![
                         vec![Pattern::E],
                         vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],
-                        vec![Pattern::S, Pattern::SE, Pattern::PSK],
+                        vec![Pattern::S, Pattern::SE],
                     ]
                 }
                 _ => Vec::new(),
             };
+        }
+        let psk_bit = &p[2..];
+        if psk_bit.starts_with("psk") {
+            if let Ok(n) = psk_bit[3..].parse::<usize>() {
+                if n == 0 {
+                    patterns[0].insert(0, Pattern::PSK);
+                } else {
+                    patterns[n - 1].push(Pattern::PSK);
+                }
+            }
         }
     }
 
@@ -62,6 +72,64 @@ mod tests {
 
     #[test]
     fn test_pattern() {
+        let expected = vec![
+            vec![Pattern::E],
+            vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],
+            vec![Pattern::S, Pattern::SE],
+        ];
+
+        let handshake = "Noise_XX_25519_ChaChaPoly_BLAKE2s";
+        let patterns = parse_handshake_patterns(handshake);
+        assert_eq!(expected, patterns);
+    }
+
+    #[test]
+    fn test_pattern_psk0() {
+        let expected = vec![
+            vec![Pattern::PSK, Pattern::E],
+            vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],
+            vec![Pattern::S, Pattern::SE],
+        ];
+
+        let handshake = "Noise_XXpsk0_25519_ChaChaPoly_BLAKE2s";
+        let patterns = parse_handshake_patterns(handshake);
+        assert_eq!(expected, patterns);
+    }
+
+    #[test]
+    fn test_pattern_psk1() {
+        let expected = vec![
+            vec![Pattern::E, Pattern::PSK],
+            vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],
+            vec![Pattern::S, Pattern::SE],
+        ];
+
+        let handshake = "Noise_XXpsk1_25519_ChaChaPoly_BLAKE2s";
+        let patterns = parse_handshake_patterns(handshake);
+        assert_eq!(expected, patterns);
+    }
+
+    #[test]
+    fn test_pattern_psk2() {
+        let expected = vec![
+            vec![Pattern::E],
+            vec![
+                Pattern::E,
+                Pattern::EE,
+                Pattern::S,
+                Pattern::ES,
+                Pattern::PSK,
+            ],
+            vec![Pattern::S, Pattern::SE],
+        ];
+
+        let handshake = "Noise_XXpsk2_25519_ChaChaPoly_BLAKE2s";
+        let patterns = parse_handshake_patterns(handshake);
+        assert_eq!(expected, patterns);
+    }
+
+    #[test]
+    fn test_pattern_psk3() {
         let expected = vec![
             vec![Pattern::E],
             vec![Pattern::E, Pattern::EE, Pattern::S, Pattern::ES],

@@ -231,7 +231,11 @@ impl HandshakeState {
             }
         }
         self.symmetric_state.decrypt_and_mix_hash(ptr, payload)?;
-        let len = ptr.len() - TAG_LEN;
+        let len = if self.symmetric_state.has_key() {
+            ptr.len() - TAG_LEN
+        } else {
+            ptr.len()
+        };
         Ok(len)
     }
 }

@@ -207,6 +207,10 @@ impl SymmetricState {
         child1.init(&out1[..key_len], 0);
         child2.init(&out2[..key_len], 0);
     }
+
+    pub(crate) fn has_key(&self) -> bool {
+        self.cipher_state.has_key()
+    }
 }
 #[cfg(test)]
 mod tests {
