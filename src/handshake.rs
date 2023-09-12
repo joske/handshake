@@ -57,19 +57,6 @@ impl HandshakeState {
         })
     }
 
-    /// Send a message during the handshake or transmission phase
-    ///
-    /// # Errors
-    ///
-    /// Forwards any errors from the lower calls
-    pub fn write_message(
-        &mut self,
-        payload: &[u8],
-        message: &mut [u8],
-    ) -> Result<usize, Box<dyn Error>> {
-        self.write_message_handshake(payload, message)
-    }
-
     /// Switch to transport mode. Will split the `SymmetricState` into two `CipherState` objects
     pub fn into_transport_mode(mut self) -> Result<TransportState, Box<dyn Error>> {
         if self.patterns.is_empty() {
@@ -90,7 +77,7 @@ impl HandshakeState {
     /// # Errors
     ///
     /// Will return `Err` if a cryptocraphic operation fails
-    pub fn write_message_handshake(
+    pub fn write_message(
         &mut self,
         payload: &[u8],
         message: &mut [u8],
@@ -101,7 +88,7 @@ impl HandshakeState {
                 match token {
                     Pattern::E => {
                         self.e.generate();
-                        let len = self.e.dh_len();
+                        let len = self.e.public().len();
                         message[byte_index..byte_index + len].copy_from_slice(self.e.public());
                         byte_index += len;
                         self.symmetric_state.mix_hash(self.e.public());
@@ -114,6 +101,13 @@ impl HandshakeState {
                             .symmetric_state
                             .encrypt_and_mix_hash(self.s.public(), &mut message[byte_index..])?;
                     }
+                    Pattern::PSK => {
+                        if let Some(psk) = self.psk {
+                            self.symmetric_state.mix_key_and_hash(&psk);
+                        } else {
+                            return Err("PSK requested but no PSK set".into());
+                        }
+                    }
                     Pattern::EE => {
                         // DH between e.private and re
                         let mut out = [0u8; MAX_DH_LEN];
@@ -124,14 +118,22 @@ impl HandshakeState {
                     Pattern::ES => {
                         // DH between e.private and rs
                         let mut out = [0u8; MAX_DH_LEN];
-                        self.e.dh(&self.rs, &mut out);
+                        if self.initiator {
+                            self.e.dh(&self.rs, &mut out);
+                        } else {
+                            self.s.dh(&self.re, &mut out);
+                        }
                         let len = self.e.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
                     }
                     Pattern::SE => {
                         // DH between s.private and re
                         let mut out = [0u8; MAX_DH_LEN];
-                        self.s.dh(&self.re, &mut out);
+                        if self.initiator {
+                            self.s.dh(&self.re, &mut out);
+                        } else {
+                            self.e.dh(&self.rs, &mut out);
+                        }
                         let len = self.s.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
                     }
@@ -141,13 +143,6 @@ impl HandshakeState {
                         self.s.dh(&self.rs, &mut out);
                         let len = self.s.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
-                    }
-                    Pattern::PSK => {
-                        if let Some(psk) = self.psk {
-                            self.symmetric_state.mix_key_and_hash(&psk);
-                        } else {
-                            return Err("PSK requested but no PSK set".into());
-                        }
                     }
                 }
             }
@@ -159,25 +154,12 @@ impl HandshakeState {
         Ok(byte_index)
     }
 
-    /// Receive a message during the handshake or transmission phase
-    ///
-    /// # Errors
-    ///
-    /// Forwards any errors from the lower calls
-    pub fn read_message(
-        &mut self,
-        message: &[u8],
-        payload: &mut [u8],
-    ) -> Result<usize, Box<dyn Error>> {
-        self.read_message_handshake(message, payload)
-    }
-
     /// Receive a message during the handshake phase.
     ///
     /// # Errors
     ///
     /// Will return `Err` if a cryptocraphic operation fails
-    pub fn read_message_handshake(
+    pub fn read_message(
         &mut self,
         message: &[u8],
         payload: &mut [u8],
@@ -195,6 +177,20 @@ impl HandshakeState {
                             self.symmetric_state.mix_key(&self.re[..len]);
                         }
                     }
+                    Pattern::S => {
+                        let len = self.s.dh_len();
+                        let data = &ptr[..len + TAG_LEN];
+                        ptr = &ptr[len + TAG_LEN..];
+                        self.symmetric_state
+                            .decrypt_and_mix_hash(data, &mut self.rs[..len])?;
+                    }
+                    Pattern::PSK => {
+                        if let Some(psk) = self.psk {
+                            self.symmetric_state.mix_key_and_hash(&psk);
+                        } else {
+                            return Err("PSK requested but no PSK set".into());
+                        }
+                    }
                     Pattern::EE => {
                         // DH between e.private and re
                         let mut out = [0u8; MAX_DH_LEN];
@@ -205,21 +201,22 @@ impl HandshakeState {
                     Pattern::ES => {
                         // DH between e.private and rs
                         let mut out = [0u8; MAX_DH_LEN];
-                        self.e.dh(&self.rs, &mut out);
+                        if self.initiator {
+                            self.e.dh(&self.rs, &mut out);
+                        } else {
+                            self.s.dh(&self.re, &mut out);
+                        }
                         let len = self.e.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
-                    }
-                    Pattern::S => {
-                        let len = self.s.dh_len();
-                        let data = &ptr[..len + TAG_LEN];
-                        ptr = &ptr[len + TAG_LEN..];
-                        self.symmetric_state
-                            .decrypt_and_mix_hash(data, &mut self.rs[..len])?;
                     }
                     Pattern::SE => {
                         // DH between s.private and re
                         let mut out = [0u8; MAX_DH_LEN];
-                        self.s.dh(&self.re, &mut out);
+                        if self.initiator {
+                            self.s.dh(&self.re, &mut out);
+                        } else {
+                            self.e.dh(&self.rs, &mut out);
+                        }
                         let len = self.s.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
                     }
@@ -229,13 +226,6 @@ impl HandshakeState {
                         self.s.dh(&self.rs, &mut out);
                         let len = self.s.dh_len();
                         self.symmetric_state.mix_key(&out[..len]);
-                    }
-                    Pattern::PSK => {
-                        if let Some(psk) = self.psk {
-                            self.symmetric_state.mix_key_and_hash(&psk);
-                        } else {
-                            return Err("PSK requested but no PSK set".into());
-                        }
                     }
                 }
             }

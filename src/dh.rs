@@ -14,7 +14,7 @@ pub enum DHs {
     D448,
 }
 
-pub trait DH {
+pub trait DH: Send + Sync {
     fn dh_len(&self) -> usize;
     fn private(&self) -> &[u8];
     fn public(&self) -> &[u8];

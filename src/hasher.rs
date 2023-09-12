@@ -1,4 +1,4 @@
-use blake2::{Digest, Blake2b512, Blake2b};
+use blake2::{Blake2b, Blake2b512, Digest};
 use blake2::{Blake2s, Blake2s256};
 use sha2::{Sha256, Sha512};
 use std::error::Error;
@@ -14,7 +14,7 @@ pub enum Hashers {
     BLAKE2s,
     BLAKE2b,
 }
-pub trait Hasher {
+pub trait Hasher: Send + Sync {
     fn hash_len(&self) -> usize;
     fn block_len(&self) -> usize;
     fn reset(&mut self);

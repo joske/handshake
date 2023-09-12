@@ -33,7 +33,7 @@ pub fn from_handshake_name(name: &str) -> Result<Box<dyn Cipher>, Box<dyn Error>
     }
 }
 
-pub trait Cipher {
+pub trait Cipher: Send + Sync {
     fn cipher_key_len(&self) -> usize;
     fn set_key(&mut self, key: &[u8]);
 
