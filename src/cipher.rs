@@ -216,4 +216,20 @@ mod tests {
         let hex = hex::encode(&out[..len]);
         assert_eq!("bc369bdf763800bc907a91467227c242b6c59cb3869c37f9cf270dd60dd56d185dbbaef850edbc6b2495d479e3b5a0edada5ae9fc8d49757cc001fbc1ce9998c241d11e43ea285df6aec4938762759c4", hex);
     }
+
+    #[test]
+    fn test_decrypt_aes() {
+        let mut cipher_state =
+            crate::cipher::CipherState::new("Noise_XXpsk3_25519_AESGCM_BLAKE2s").unwrap();
+        let key = [1u8; 32];
+        cipher_state.init(&key, 0);
+        let plaintext = [3u8; 64];
+        let authtext = [2u8; 32];
+        let mut out = [0u8; 128];
+        let ciphertext = hex::decode("bc369bdf763800bc907a91467227c242b6c59cb3869c37f9cf270dd60dd56d185dbbaef850edbc6b2495d479e3b5a0edada5ae9fc8d49757cc001fbc1ce9998c241d11e43ea285df6aec4938762759c4").unwrap();
+        let len = cipher_state
+            .decrypt(&authtext, &ciphertext, &mut out)
+            .unwrap();
+        assert_eq!(plaintext, out[..len]);
+    }
 }

@@ -248,11 +248,7 @@ mod tests {
     fn test_hasher_blake2s() {
         let hasher = from_handshake_name("Noise_XXpsk3_25519_ChaChaPoly_BLAKE2s");
         assert!(hasher.is_ok());
-    }
-
-    #[test]
-    fn test_hash() {
-        let mut hasher = HasherBlake2s::default();
+        let mut hasher = hasher.unwrap();
         let mut out = [0u8; 32];
         hasher.update("rust rules".as_bytes());
         hasher.output(&mut out);

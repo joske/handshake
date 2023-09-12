@@ -140,6 +140,14 @@ mod test {
     fn test_from_25519() {
         let hasher = from_handshake_name("Noise_XXpsk3_25519_ChaChaPoly_BLAKE2s");
         assert!(hasher.is_ok());
+        assert_eq!(32, hasher.unwrap().dh_len());
+    }
+
+    #[test]
+    fn test_from_448() {
+        let hasher = from_handshake_name("Noise_XXpsk3_448_ChaChaPoly_BLAKE2s");
+        assert!(hasher.is_ok());
+        assert_eq!(56, hasher.unwrap().dh_len());
     }
 
     #[test]
