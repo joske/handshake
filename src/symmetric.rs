@@ -1,12 +1,13 @@
-use crate::cipher::CipherState;
-use crate::hasher::Hasher;
-use crate::hasher::{from_handshake_name, MAX_HASH_LEN};
+use crate::{
+    cipher::CipherState,
+    hasher::{from_handshake_name, Hasher, MAX_HASH_LEN},
+};
 use std::error::Error;
 
 pub struct SymmetricState {
-    h: [u8; MAX_HASH_LEN],
-    ck: [u8; MAX_HASH_LEN],
-    hasher: Box<dyn Hasher>,
+    h:            [u8; MAX_HASH_LEN],
+    ck:           [u8; MAX_HASH_LEN],
+    hasher:       Box<dyn Hasher>,
     cipher_state: CipherState,
 }
 
@@ -58,14 +59,7 @@ impl SymmetricState {
         let mut output = ([0u8; MAX_HASH_LEN], [0u8; MAX_HASH_LEN]);
         let mut ck = [0u8; MAX_HASH_LEN];
         ck.copy_from_slice(&self.ck);
-        self.hkdf(
-            &ck[..hash_len],
-            data,
-            2,
-            &mut output.0,
-            &mut output.1,
-            &mut [],
-        );
+        self.hkdf(&ck[..hash_len], data, 2, &mut output.0, &mut output.1, &mut []);
         self.ck.copy_from_slice(&output.0);
         self.cipher_state.init(&output.1[..cipher_key_len], 0);
     }
@@ -73,21 +67,10 @@ impl SymmetricState {
     pub fn mix_key_and_hash(&mut self, data: &[u8]) {
         let hash_len = self.hasher.hash_len();
         let cipher_key_len = self.cipher_state.key_len();
-        let mut output = (
-            [0u8; MAX_HASH_LEN],
-            [0u8; MAX_HASH_LEN],
-            [0u8; MAX_HASH_LEN],
-        );
+        let mut output = ([0u8; MAX_HASH_LEN], [0u8; MAX_HASH_LEN], [0u8; MAX_HASH_LEN]);
         let mut ck = [0u8; MAX_HASH_LEN];
         ck.copy_from_slice(&self.ck);
-        self.hkdf(
-            &ck[..hash_len],
-            data,
-            3,
-            &mut output.0,
-            &mut output.1,
-            &mut output.2,
-        );
+        self.hkdf(&ck[..hash_len], data, 3, &mut output.0, &mut output.1, &mut output.2);
         self.ck.copy_from_slice(&output.0);
         self.mix_hash(&output.1[..hash_len]);
         self.cipher_state.init(&output.2[..cipher_key_len], 0);
@@ -161,10 +144,7 @@ impl SymmetricState {
     ) -> Result<usize, Box<dyn Error>> {
         let hash_len = self.hasher.hash_len();
         let len = if self.cipher_state.has_key() {
-            let len = self
-                .cipher_state
-                .encrypt(&self.h[..hash_len], plaintext, out)?;
-            len
+            self.cipher_state.encrypt(&self.h[..hash_len], plaintext, out)?
         } else {
             let len = plaintext.len();
             out[..len].copy_from_slice(plaintext);

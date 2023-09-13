@@ -83,8 +83,8 @@ pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
             };
         }
         let modifiers = &p[2..];
-        if modifiers.starts_with("psk") {
-            if let Ok(n) = modifiers[3..].parse::<usize>() {
+        if let Some(psk) = modifiers.strip_prefix("psk") {
+            if let Ok(n) = psk.parse::<usize>() {
                 if n == 0 {
                     // psk0 means at the start of the first message
                     patterns[0].insert(0, Pattern::PSK);
