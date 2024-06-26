@@ -49,7 +49,7 @@ pub fn from_handshake_name(name: &str) -> Result<Box<dyn DH>, Box<dyn Error>> {
 #[derive(Default)]
 pub struct DH25519 {
     pub private: [u8; 32],
-    pub public: [u8; 32],
+    pub public:  [u8; 32],
 }
 
 impl DH for DH25519 {
@@ -80,15 +80,12 @@ impl DH for DH25519 {
 
 pub struct DH448 {
     pub private: [u8; 56],
-    pub public: [u8; 56],
+    pub public:  [u8; 56],
 }
 
 impl Default for DH448 {
     fn default() -> Self {
-        Self {
-            private: [0u8; 56],
-            public: [0u8; 56],
-        }
+        Self { private: [0u8; 56], public: [0u8; 56] }
     }
 }
 
@@ -153,10 +150,7 @@ mod test {
     #[test]
     fn test_25519() {
         let e = [1u8; 32];
-        let dh = DH25519 {
-            private: e,
-            public: e,
-        };
+        let dh = DH25519 { private: e, public: e };
         let re = [2u8; 32];
         let mut out = [0u8; 32];
         dh.dh(&re, &mut out);
@@ -169,10 +163,7 @@ mod test {
     #[test]
     fn test_448() {
         let e = [1u8; 56];
-        let dh = DH448 {
-            private: e,
-            public: e,
-        };
+        let dh = DH448 { private: e, public: e };
         let re = [2u8; 56];
         let mut out = [0u8; 56];
         dh.dh(&re, &mut out);

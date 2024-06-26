@@ -34,10 +34,7 @@ impl Cipher for CipherAesGcm {
         let mut nonce_bytes = [0u8; 12];
         nonce_bytes[4..].copy_from_slice(&nonce.to_be_bytes());
         let nonce = Nonce::from_slice(&nonce_bytes);
-        let p = Payload {
-            msg: plaintext,
-            aad: ad,
-        };
+        let p = Payload { msg: plaintext, aad: ad };
         let ciphertext = self
             .cipher
             .as_mut()

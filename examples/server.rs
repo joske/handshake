@@ -1,8 +1,7 @@
 use std::error::Error;
 use tokio::net::{TcpListener, TcpStream};
 
-use handshake::dh::from_handshake_name;
-use handshake::handshake::HandshakeState;
+use handshake::{dh::from_handshake_name, handshake::HandshakeState};
 
 static PSK: [u8; 32] = *b"XTSPPFrCk7sZmBFm8Hm6cXjjS7Ddd3PV";
 const NAME: &str = "Noise_XXpsk3_25519_ChaChaPoly_BLAKE2s";
@@ -19,11 +18,8 @@ async fn run_server() -> Result<(), Box<dyn Error>> {
     println!("Listening on 0.0.0.0:9999");
     let tcp_listener = TcpListener::bind("0.0.0.0:9999").await?;
     loop {
-        if let Some((stream, addr)) = tcp_listener
-            .accept()
-            .await
-            .map_err(|e| eprintln!("error during accept: {:?}", e))
-            .ok()
+        if let Ok((stream, addr)) =
+            tcp_listener.accept().await.map_err(|e| eprintln!("error during accept: {:?}", e))
         {
             tokio::spawn(async move {
                 handle_client(stream, addr)

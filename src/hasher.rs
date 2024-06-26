@@ -1,8 +1,6 @@
-use blake2::{Blake2b, Blake2b512, Digest};
-use blake2::{Blake2s, Blake2s256};
+use blake2::{Blake2b, Blake2b512, Blake2s, Blake2s256, Digest};
 use sha2::{Sha256, Sha512};
-use std::error::Error;
-use std::str::FromStr;
+use std::{error::Error, str::FromStr};
 use strum::EnumString;
 
 pub const MAX_HASH_LEN: usize = 64;
@@ -54,9 +52,7 @@ pub struct HasherBlake2s {
 impl HasherBlake2s {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            hasher: Blake2s::default(),
-        }
+        Self { hasher: Blake2s::default() }
     }
 }
 
@@ -94,9 +90,7 @@ pub struct HasherBlake2b {
 impl HasherBlake2b {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            hasher: Blake2b::default(),
-        }
+        Self { hasher: Blake2b::default() }
     }
 }
 
@@ -204,10 +198,7 @@ mod tests {
         hasher.update("for sure".as_bytes());
         hasher.output(&mut out);
         let h = hex::encode(out);
-        assert_eq!(
-            "317fce3c1139697d19645d29eaf305a62c88043ad8b8ace56141364fcd97d00d",
-            h
-        );
+        assert_eq!("317fce3c1139697d19645d29eaf305a62c88043ad8b8ace56141364fcd97d00d", h);
     }
 
     #[test]
@@ -251,9 +242,6 @@ mod tests {
         hasher.update("rust rules".as_bytes());
         hasher.output(&mut out);
         let h = hex::encode(out);
-        assert_eq!(
-            "6ad446d3fc8e3ef1f81a189f08c4794ac7b6b4dd211c47e456c5c1119e7ce95c",
-            h
-        );
+        assert_eq!("6ad446d3fc8e3ef1f81a189f08c4794ac7b6b4dd211c47e456c5c1119e7ce95c", h);
     }
 }

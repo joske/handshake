@@ -1,8 +1,7 @@
 use std::error::Error;
 use tokio::net::TcpStream;
 
-use handshake::dh::from_handshake_name;
-use handshake::handshake::HandshakeState;
+use handshake::{dh::from_handshake_name, handshake::HandshakeState};
 
 mod common;
 
@@ -35,9 +34,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Sent encypted message to server");
     let response = common::read(&mut socket).await?;
     let len = codec.decrypt(&response, &mut message)?;
-    println!(
-        "server responded with: {}",
-        String::from_utf8_lossy(&message[..len])
-    );
+    println!("server responded with: {}", String::from_utf8_lossy(&message[..len]));
     Ok(())
 }

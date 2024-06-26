@@ -1,19 +1,15 @@
-use crate::{cipher::CipherState};
+use crate::cipher::CipherState;
 use std::error::Error;
 
 pub struct TransportState {
     initiator: bool,
-    cipher1: CipherState,
-    cipher2: CipherState,
+    cipher1:   CipherState,
+    cipher2:   CipherState,
 }
 
 impl TransportState {
     pub(crate) fn new(initiator: bool, cipher1: CipherState, cipher2: CipherState) -> Self {
-        Self {
-            initiator,
-            cipher1,
-            cipher2,
-        }
+        Self { initiator, cipher1, cipher2 }
     }
 
     pub fn encrypt(&mut self, payload: &[u8], message: &mut [u8]) -> Result<usize, Box<dyn Error>> {
