@@ -57,12 +57,10 @@ impl HasherBlake2s {
 }
 
 impl Hasher for HasherBlake2s {
-    #[must_use]
     fn hash_len(&self) -> usize {
         32usize
     }
 
-    #[must_use]
     fn block_len(&self) -> usize {
         64usize
     }
@@ -95,12 +93,10 @@ impl HasherBlake2b {
 }
 
 impl Hasher for HasherBlake2b {
-    #[must_use]
     fn hash_len(&self) -> usize {
         64usize
     }
 
-    #[must_use]
     fn block_len(&self) -> usize {
         128usize
     }
@@ -130,7 +126,6 @@ impl Hasher for HasherSha256 {
         32
     }
 
-    #[must_use]
     fn block_len(&self) -> usize {
         64usize
     }
@@ -159,7 +154,6 @@ impl Hasher for HasherSha512 {
         64
     }
 
-    #[must_use]
     fn block_len(&self) -> usize {
         128usize
     }
