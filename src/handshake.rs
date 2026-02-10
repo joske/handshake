@@ -58,6 +58,10 @@ impl HandshakeState {
     }
 
     /// Switch to transport mode. Will split the `SymmetricState` into two `CipherState` objects
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if the handshake is not finished yet
     pub fn into_transport_mode(mut self) -> Result<TransportState, Box<dyn Error>> {
         if self.patterns.is_empty() {
             self.symmetric_state.split(&mut self.cipher1, &mut self.cipher2);

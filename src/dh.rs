@@ -1,8 +1,7 @@
-use rand_core::{OsRng, RngCore};
 use std::{error::Error, str::FromStr};
 use strum::EnumString;
-use x25519_dalek::x25519;
 use x448::x448_unchecked;
+use x25519_dalek::x25519;
 
 pub const MAX_DH_LEN: usize = 56;
 
@@ -49,7 +48,7 @@ pub fn from_handshake_name(name: &str) -> Result<Box<dyn DH>, Box<dyn Error>> {
 #[derive(Default)]
 pub struct DH25519 {
     pub private: [u8; 32],
-    pub public:  [u8; 32],
+    pub public: [u8; 32],
 }
 
 impl DH for DH25519 {
@@ -65,7 +64,7 @@ impl DH for DH25519 {
     }
 
     fn generate(&mut self) {
-        OsRng.fill_bytes(&mut self.private);
+        rand::fill(&mut self.private);
         self.public = x25519(self.private, x25519_dalek::X25519_BASEPOINT_BYTES);
     }
 
@@ -80,7 +79,7 @@ impl DH for DH25519 {
 
 pub struct DH448 {
     pub private: [u8; 56],
-    pub public:  [u8; 56],
+    pub public: [u8; 56],
 }
 
 impl Default for DH448 {
@@ -102,7 +101,7 @@ impl DH for DH448 {
     }
 
     fn generate(&mut self) {
-        OsRng.fill_bytes(&mut self.private);
+        rand::fill(&mut self.private);
         self.public = x448::x448_unchecked(self.private, x448::X448_BASEPOINT_BYTES);
     }
 
@@ -117,7 +116,7 @@ impl DH for DH448 {
 
 #[cfg(test)]
 mod test {
-    use crate::dh::{from_handshake_name, DH448};
+    use crate::dh::{DH448, from_handshake_name};
 
     use super::{DH, DH25519};
 

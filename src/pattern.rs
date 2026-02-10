@@ -83,15 +83,15 @@ pub fn parse_handshake_patterns(name: &str) -> Vec<Vec<Pattern>> {
             };
         }
         let modifiers = &p[2..];
-        if let Some(psk) = modifiers.strip_prefix("psk") {
-            if let Ok(n) = psk.parse::<usize>() {
-                if n == 0 {
-                    // psk0 means at the start of the first message
-                    patterns[0].insert(0, Pattern::PSK);
-                } else {
-                    // all other cases, add at the end
-                    patterns[n - 1].push(Pattern::PSK);
-                }
+        if let Some(psk) = modifiers.strip_prefix("psk")
+            && let Ok(n) = psk.parse::<usize>()
+        {
+            if n == 0 {
+                // psk0 means at the start of the first message
+                patterns[0].insert(0, Pattern::PSK);
+            } else {
+                // all other cases, add at the end
+                patterns[n - 1].push(Pattern::PSK);
             }
         }
     }

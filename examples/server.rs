@@ -19,12 +19,12 @@ async fn run_server() -> Result<(), Box<dyn Error>> {
     let tcp_listener = TcpListener::bind("0.0.0.0:9999").await?;
     loop {
         if let Ok((stream, addr)) =
-            tcp_listener.accept().await.map_err(|e| eprintln!("error during accept: {:?}", e))
+            tcp_listener.accept().await.map_err(|e| eprintln!("error during accept: {e:?}"))
         {
             tokio::spawn(async move {
                 handle_client(stream, addr)
                     .await
-                    .map_err(|e| eprintln!("error handling client: {:?}", e))
+                    .map_err(|e| eprintln!("error handling client: {e:?}"))
                     .ok();
             });
         }
@@ -35,7 +35,7 @@ async fn handle_client(
     mut socket: TcpStream,
     addr: std::net::SocketAddr,
 ) -> Result<(), Box<dyn Error>> {
-    println!("Client connected from {}", addr);
+    println!("Client connected from {addr}");
     let mut static_key = from_handshake_name(NAME)?;
     static_key.generate();
     let mut handshake_state = HandshakeState::new(NAME, static_key, Some(PSK), &[], false)?;

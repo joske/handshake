@@ -12,6 +12,9 @@ impl TransportState {
         Self { initiator, cipher1, cipher2 }
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if encryption fails
     pub fn encrypt(&mut self, payload: &[u8], message: &mut [u8]) -> Result<usize, Box<dyn Error>> {
         if self.initiator {
             self.cipher1.encrypt(&[0u8; 0], payload, message)
@@ -20,6 +23,9 @@ impl TransportState {
         }
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if decryption fails
     pub fn decrypt(&mut self, payload: &[u8], message: &mut [u8]) -> Result<usize, Box<dyn Error>> {
         if self.initiator {
             self.cipher2.decrypt(&[0u8; 0], payload, message)

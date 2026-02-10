@@ -87,6 +87,7 @@ impl CipherState {
         self.cipher.as_mut().set_key(key);
     }
 
+    #[must_use]
     pub fn has_key(&self) -> bool {
         self.has_key
     }

@@ -5,6 +5,9 @@ use tokio::{
 
 // simple server transport protocol is 2 bytes (Big Endian) for length and then exactly that amount of bytes
 
+/// # Errors
+///
+/// Will return `Err` on I/O failure
 pub async fn read(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     let mut len = [0u8; 2];
     socket.read_exact(&mut len).await?;
@@ -14,6 +17,10 @@ pub async fn read(socket: &mut TcpStream) -> std::io::Result<Vec<u8>> {
     Ok(buf)
 }
 
+/// # Errors
+///
+/// Will return `Err` on I/O failure
+#[allow(clippy::cast_possible_truncation)]
 pub async fn write(socket: &mut TcpStream, buf: &[u8]) -> std::io::Result<()> {
     let len = (buf.len() as u16).to_be_bytes();
     socket.write_all(&len).await?;
